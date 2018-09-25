@@ -1,7 +1,8 @@
 const electron = require('electron');
-const { app, BrowserWindow, Menu } = electron;
+const { app, BrowserWindow, Menu, ipcMain } = electron;
 
 let mainWindow;
+let addWindow;
 
 app.on('ready', () => {
     mainWindow = new BrowserWindow({});
@@ -18,7 +19,7 @@ app.on('ready', () => {
 
 function createAddWindow() {
 
-    let addWindow = new BrowserWindow({
+    addWindow = new BrowserWindow({
         width: 300,
         height: 200,
         title: 'Add New Todo',
@@ -26,9 +27,19 @@ function createAddWindow() {
     })
 
     addWindow.loadURL(`file://${__dirname}/add.html`);
+    addWindow.on('closed', () => addWindow = null);
 
 }
 
+ipcMain.on('todo:add', (event, todo) => {
+    mainWindow.webContents.send('todo:add', todo);
+    addWindow.close();
+});
+
+//emit clear todo 
+// function clearTodo(){
+//     mainWindow.webContents.send('todo:clear');
+// }
 
 const menuTemplate = [
     {
@@ -38,6 +49,12 @@ const menuTemplate = [
                 label: 'New Todo',
                 click() {
                     createAddWindow();
+                }
+            },
+            {
+                label: 'Clear Todos',
+                click() {
+                    mainWindow.webContents.send('todo:clear');
                 }
             },
             {
@@ -63,6 +80,7 @@ if (process.env.NODE_ENV !== 'production') {
     menuTemplate.push({
         label: 'Developer',
         submenu: [
+            { role: 'reload' },
             {
                 label: 'Toogle Developer Tools',
                 accelerator: process.platform === 'darwin' ? 'Command+Alt+I' : 'Ctrl+Shift+I',
